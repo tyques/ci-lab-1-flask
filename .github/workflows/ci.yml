@@ -1,20 +1,45 @@
-# =========================================================
-# САМОСТОЯТЕЛЬНАЯ РАБОТА
-# =========================================================
-#
-# Разработайте CI-пайплайн согласно разделу 5.4.1.
-#
-# Необходимо самостоятельно настроить:
-# 1. запуск при push в main;
-# 2. запуск при Pull Request в main;
-# 3. Ubuntu;
-# 4. checkout исходного кода;
-# 5. установку Python с кэшированием;
-# 6. установку зависимостей;
-# 7. lint;
-# 8. тесты с покрытием / Quality Gate;
-# 9. build;
-# 10. при желании — сохранение отчёта покрытия.
-#
-# Готовый workflow здесь намеренно не приводится.
-# =========================================================
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.14.4'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Lint with flake8
+        run: |
+          flake8 app tests 
+
+      - name: Test with coverage
+        run: |
+          pytest
+
+      - name: Build package
+        run: |
+          python -m py_compile app/*.py
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-report
+          path: htmlcov/
